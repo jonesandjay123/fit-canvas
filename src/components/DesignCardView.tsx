@@ -2,15 +2,8 @@
 
 import { forwardRef } from "react";
 import type { DesignCard } from "@/lib/types";
-import { STYLES } from "@/lib/types";
-
-const LABELS: Record<string, string> = {
-  chest: "胸圍",
-  waist: "腰圍",
-  hips: "臀圍",
-  height: "身高",
-  shoulder: "肩寬",
-};
+import { MEASUREMENT_LABELS } from "@/lib/types";
+import { CATEGORY_LABELS, getPattern } from "@/lib/patterns/catalog";
 
 interface Props {
   card: DesignCard;
@@ -21,17 +14,28 @@ const DesignCardView = forwardRef<HTMLDivElement, Props>(function DesignCardView
   { card },
   ref,
 ) {
-  const styleLabel = STYLES.find((s) => s.id === card.style)?.label ?? card.style;
+  // 優先用卡片快照，舊卡片若沒有快照則回退查型錄。
+  const fallback = getPattern(card.style);
+  const styleLabel = card.styleLabel || fallback?.label || card.style;
+  const category = card.styleCategory || fallback?.category;
+  const description = card.styleDescription || fallback?.description || "";
+  const categoryLabel = category ? CATEGORY_LABELS[category] : "";
 
   return (
     <div
       ref={ref}
       className="w-full rounded-xl border border-neutral-200 bg-white p-5 text-neutral-900 dark:border-neutral-800"
     >
-      <div className="mb-4 flex items-baseline justify-between gap-2">
+      <div className="mb-1 flex items-baseline justify-between gap-2">
         <h3 className="text-lg font-semibold">{card.name || "未命名設計"}</h3>
-        <span className="text-xs text-neutral-400">{styleLabel}</span>
+        <span className="text-xs text-neutral-400">
+          {styleLabel}
+          {categoryLabel ? ` · ${categoryLabel}` : ""}
+        </span>
       </div>
+      {description && (
+        <p className="mb-4 text-xs text-neutral-400">{description}</p>
+      )}
 
       <div className="grid grid-cols-2 gap-4">
         {/* 左：布料圖 + 紙樣縮圖 */}
@@ -65,7 +69,10 @@ const DesignCardView = forwardRef<HTMLDivElement, Props>(function DesignCardView
             <ul className="grid grid-cols-2 gap-x-3 gap-y-0.5">
               {Object.entries(card.measurements).map(([k, v]) => (
                 <li key={k} className="flex justify-between">
-                  <span className="text-neutral-500">{LABELS[k] ?? k}</span>
+                  <span className="text-neutral-500">
+                    {MEASUREMENT_LABELS[k as keyof typeof MEASUREMENT_LABELS] ??
+                      k}
+                  </span>
                   <span className="font-medium">{v}</span>
                 </li>
               ))}

@@ -1,35 +1,34 @@
 "use client";
 
-import type { Measurements, StyleId } from "@/lib/types";
-import { STYLES } from "@/lib/types";
+import type { Measurements, MeasurementField } from "@/lib/types";
+import { MEASUREMENT_LABELS } from "@/lib/types";
 import NumberField from "./NumberField";
 
 interface Props {
   name: string;
   onNameChange: (v: string) => void;
-  style: StyleId;
-  onStyleChange: (v: StyleId) => void;
   measurements: Measurements;
   onMeasurementsChange: (m: Measurements) => void;
+  /** 此款式主要用到的尺寸欄位，會加上標記 */
+  highlightFields: MeasurementField[];
 }
 
-const FIELDS: { key: keyof Measurements; label: string }[] = [
-  { key: "chest", label: "胸圍" },
-  { key: "waist", label: "腰圍" },
-  { key: "hips", label: "臀圍" },
-  { key: "height", label: "身高" },
-  { key: "shoulder", label: "肩寬" },
+const FIELDS: MeasurementField[] = [
+  "chest",
+  "waist",
+  "hips",
+  "height",
+  "shoulder",
 ];
 
 export default function MeasurementForm({
   name,
   onNameChange,
-  style,
-  onStyleChange,
   measurements,
   onMeasurementsChange,
+  highlightFields,
 }: Props) {
-  const set = (key: keyof Measurements, value: number) =>
+  const set = (key: MeasurementField, value: number) =>
     onMeasurementsChange({ ...measurements, [key]: value });
 
   return (
@@ -47,30 +46,14 @@ export default function MeasurementForm({
         />
       </label>
 
-      <label className="flex flex-col gap-1">
-        <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
-          款式
-        </span>
-        <select
-          value={style}
-          onChange={(e) => onStyleChange(e.target.value as StyleId)}
-          className="rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-200"
-        >
-          {STYLES.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-      </label>
-
       <div className="grid grid-cols-2 gap-3">
         {FIELDS.map((f) => (
           <NumberField
-            key={f.key}
-            label={f.label}
-            value={measurements[f.key]}
-            onChange={(v) => set(f.key, v)}
+            key={f}
+            label={MEASUREMENT_LABELS[f]}
+            primary={highlightFields.includes(f)}
+            value={measurements[f]}
+            onChange={(v) => set(f, v)}
           />
         ))}
       </div>

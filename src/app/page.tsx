@@ -2,16 +2,20 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
-import type { DesignCard, Measurements, StyleId } from "@/lib/types";
+import type { DesignCard, Measurements } from "@/lib/types";
 import { DEFAULT_MEASUREMENTS } from "@/lib/types";
-import { loadCards, saveCards } from "@/lib/storage";
+import { getPattern, type StyleId } from "@/lib/patterns/catalog";
+import { useDesignCards, setStoredCards } from "@/lib/storage";
 import MeasurementForm from "@/components/MeasurementForm";
+import StylePicker from "@/components/StylePicker";
+import StyleInfo from "@/components/StyleInfo";
 import PatternPreview from "@/components/PatternPreview";
 import DesignCardView from "@/components/DesignCardView";
+import Roadmap from "@/components/Roadmap";
 
 export default function Home() {
   const [name, setName] = useState("");
-  const [style, setStyle] = useState<StyleId>("tshirt");
+  const [style, setStyle] = useState<StyleId>("aaron");
   const [measurements, setMeasurements] =
     useState<Measurements>(DEFAULT_MEASUREMENTS);
   const [fabricImage, setFabricImage] = useState<string | null>(null);
@@ -23,15 +27,12 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [cards, setCards] = useState<DesignCard[]>([]);
+  const cards = useDesignCards();
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // 載入已存的設計卡
-  useEffect(() => {
-    setCards(loadCards());
-  }, []);
+  const pattern = getPattern(style)!;
 
-  // 尺寸變動 → 防抖後重新生成紙樣
+  // 款式或尺寸變動 → 防抖後重新生成紙樣
   useEffect(() => {
     const id = setTimeout(async () => {
       setLoading(true);
@@ -40,7 +41,7 @@ export default function Home() {
         const res = await fetch("/api/pattern", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(measurements),
+          body: JSON.stringify({ style, measurements }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error ?? "生成失敗");
@@ -53,7 +54,7 @@ export default function Home() {
       }
     }, 400);
     return () => clearTimeout(id);
-  }, [measurements]);
+  }, [style, measurements]);
 
   const onFabric = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -67,26 +68,28 @@ export default function Home() {
     id: "preview",
     name,
     style,
+    styleLabel: pattern.label,
+    styleCategory: pattern.category,
+    styleDescription: pattern.description,
     measurements,
     fabricImage,
     swatches,
     notes,
     patternSvg: svg,
-    createdAt: Date.now(),
-  };
-
-  const persist = (next: DesignCard[]) => {
-    setCards(next);
-    saveCards(next);
+    createdAt: 0, // 預覽卡不需要時間戳，儲存時才寫入
   };
 
   const handleSave = () => {
-    const card: DesignCard = { ...currentCard, id: crypto.randomUUID() };
-    persist([card, ...cards]);
+    const card: DesignCard = {
+      ...currentCard,
+      id: crypto.randomUUID(),
+      createdAt: Date.now(),
+    };
+    setStoredCards([card, ...cards]);
   };
 
   const handleDelete = (id: string) =>
-    persist(cards.filter((c) => c.id !== id));
+    setStoredCards(cards.filter((c) => c.id !== id));
 
   const handleExport = useCallback(async () => {
     if (!cardRef.current) return;
@@ -105,20 +108,28 @@ export default function Home() {
       <header className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">fit-canvas</h1>
         <p className="mt-1 text-sm text-neutral-500">
-          服裝設計小工作台 · 量身 → 款式 → 2D 紙樣 → 設計卡
+          多款式服裝版型 playground · 量身 → 款式 → 2D 紙樣 → 設計卡
         </p>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
         {/* 左欄：輸入 */}
         <section className="flex flex-col gap-6">
+          <div className="flex flex-col gap-2">
+            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+              選擇款式
+            </span>
+            <StylePicker value={style} onChange={setStyle} />
+          </div>
+
+          <StyleInfo pattern={pattern} />
+
           <MeasurementForm
             name={name}
             onNameChange={setName}
-            style={style}
-            onStyleChange={setStyle}
             measurements={measurements}
             onMeasurementsChange={setMeasurements}
+            highlightFields={pattern.usedFields}
           />
 
           {/* 布料圖 */}
@@ -236,6 +247,8 @@ export default function Home() {
           </div>
         </section>
       )}
+
+      <Roadmap />
     </main>
   );
 }
