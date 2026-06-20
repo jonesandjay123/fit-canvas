@@ -54,7 +54,7 @@ const DesignCardView = forwardRef<HTMLDivElement, Props>(function DesignCardView
           )}
           {card.patternSvg && (
             <div
-              className="h-32 w-full overflow-hidden rounded-lg bg-neutral-50 p-2 [&_svg]:h-full [&_svg]:w-full"
+              className="fs-pattern h-32 w-full overflow-hidden rounded-lg bg-neutral-50 p-2 [&_svg]:h-full [&_svg]:w-full"
               dangerouslySetInnerHTML={{ __html: card.patternSvg }}
             />
           )}

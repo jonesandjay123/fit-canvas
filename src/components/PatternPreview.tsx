@@ -8,7 +8,7 @@ interface Props {
 
 export default function PatternPreview({ svg, loading, error }: Props) {
   return (
-    <div className="relative flex min-h-[320px] items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-800 dark:bg-neutral-900">
+    <div className="relative flex min-h-[320px] items-center justify-center rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800">
       {loading && (
         <span className="absolute right-3 top-3 text-xs text-neutral-400">
           生成中…
@@ -18,7 +18,7 @@ export default function PatternPreview({ svg, loading, error }: Props) {
         <p className="text-sm text-red-500">{error}</p>
       ) : svg ? (
         <div
-          className="pattern-svg w-full max-w-full [&_svg]:h-auto [&_svg]:w-full"
+          className="fs-pattern w-full max-w-full [&_svg]:h-auto [&_svg]:w-full"
           dangerouslySetInnerHTML={{ __html: svg }}
         />
       ) : (
